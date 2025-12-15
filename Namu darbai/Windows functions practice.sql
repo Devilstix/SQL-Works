@@ -83,7 +83,8 @@ ORDER BY CategoryName, total_sales DESC;
 -- 4. Calculate the Moving Average of Monthly Sales: Use the AVG() window func<on to
 -- calculate a 3-month moving average of sales.
 
-
+SELECT
+    
 -- 5. Compare Individual Sales to Average Sales: Use the AVG() window func<on to
 -- compare individual sales amounts to the average sales of the respec<ve year.
 -- 6. Par<<on Sales by Territory and Rank: Use the DENSE_RANK() window func<on to
