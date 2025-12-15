@@ -415,7 +415,7 @@ FROM sales_salesorderdetail sod
 JOIN production_product pp ON sod.ProductID = pp.ProductID
 GROUP BY Produktas
 HAVING Uzsakymai > 100
-ORDER BY Uzsakymai DESC
+ORDER BY Uzsakymai DESC;
 
 -- MOKYTOJOS KODEL SKIRIASI DEL ORDERQTY
 SELECT
@@ -450,11 +450,30 @@ SELECT
 	hre.BusinessEntityID
     , CONCAT_WS(' ', pp.FirstName, pp.MiddleName, pp.LastName) AS 'Vardas, pavarde'
     , hre.HireDate
-    CASE
+    , CASE
 		WHEN DATEDIFF(DATE(2014-07-06),  hre.HireDate) > 3650 THEN '>10 METU'
         WHEN DATEDIFF(DATE(2014-07-06),  hre.HireDate) > 1825 THEN '>5 METAI'
         WHEN DATEDIFF(DATE(2014-07-06),  hre.HireDate) > 365 THEN '>1 year'
         ELSE '<=1 METAI'
+        END AS 'Stazas'
 	FROM humanresources_employee hre
-    JOIN person_person pp
+    JOIN person_person pp ON hre.BusinessEntityID = pp.BusinessEntityID;
+    
+   
+    
+    SELECT
+	hre.BusinessEntityID
+    , CONCAT_WS(' ', pp.FirstName, pp.MiddleName, pp.LastName) AS 'Vardas, pavarde'
+    , hre.HireDate
+    , CASE
+		WHEN DATEDIFF( CURRENT_DATE(),  hre.HireDate) > 3650 THEN '>10 METU'
+        WHEN DATEDIFF( CURRENT_DATE(),  hre.HireDate) > 1825 THEN '>5 METAI'
+        WHEN DATEDIFF( CURRENT_DATE(),  hre.HireDate) > 365 THEN '>1 year'
+        ELSE '<=1 METAI'
+        END AS 'Stazas'
+	FROM humanresources_employee hre
+    JOIN person_person pp ON hre.BusinessEntityID = pp.BusinessEntityID;
+    
+    
 -- 48. Raskite, kurie produktai generavo didžiausią pardavimų pajamų sumą
+

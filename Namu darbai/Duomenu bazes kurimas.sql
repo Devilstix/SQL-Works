@@ -24,6 +24,13 @@ CREATE TABLE uzsakymai (
     uzsakymo_data DATE,
     FOREIGN KEY (vartotojo_id) REFERENCES vartotojai( vartotojo_id));
     
+ALTER TABLE uzsakymai
+MODIFY COLUMN uzsakymo_data TIMESTAMP;
+
+ALTER TABLE uzsakymai
+ADD COLUMN grazinimo_data TIMESTAMP;
+
+    
 CREATE TABLE kategorijos (
     kategorijos_id INT PRIMARY KEY,
 	marke VARCHAR(100),
@@ -46,7 +53,12 @@ CREATE TABLE nuoma (
 ('3', 'Giedrius', 'Simonaitis', 'simonaitixxx@gmail.com'),
 ('4', 'Laura', 'Vainyte', 'vainiux69@gmail.com');
 
+INSERT INTO vartotojai (vartotojo_id, kliento_vardas, kliento_pavarde, email) VALUES
+('5', 'Gabrielius', 'Stonkus', 'babston@gmail.com'),
+('6', 'Saulius', 'Zubravicius', 'superzuber@gmail.com');
+
 SELECT * FROM vartotojai;
+
 
 INSERT INTO automobiliai (auto_id, kategorijos_id, auto_pavadinimas) VALUES
 ('1', '2', 'Dodge Durango'),

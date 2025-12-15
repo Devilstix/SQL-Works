@@ -94,3 +94,44 @@ SELECT
     FROM person_person pp
     JOIN person_emailaddress pe ON pp.BusinessEntityID = pe.BusinessEntityID;
     
+SELECT	
+	pps.ProductSubcategoryID
+   ,  pc.ProductCategoryID 
+  ,  COUNT(*) 
+  FROM production_product pp 
+  JOIN production_productsubcategory pps ON pp.ProductSubcategoryID = pps.ProductSubcategoryID
+  JOIN production_productcategory pc ON pps.ProductCategoryID = pc.ProductCategoryID
+  GROUP BY pc.ProductCategoryID;
+  
+  SELECT	
+	pc.ProductCategoryID,
+    pc.Name
+	,COUNT(*) 
+  FROM production_product pp 
+  JOIN production_productsubcategory pps ON pp.ProductSubcategoryID = pps.ProductSubcategoryID
+  JOIN production_productcategory pc ON pps.ProductCategoryID = pc.ProductCategoryID
+  GROUP BY pc.ProductCategoryID;
+  
+  -- 20.
+  
+  SELECT	
+	pps.ProductSubcategoryID,
+    pps.Name
+	,COUNT(*) 
+  FROM production_product pp 
+  JOIN production_productsubcategory pps ON pp.ProductSubcategoryID = pps.ProductSubcategoryID
+  GROUP BY pps.ProductSubcategoryID;
+  
+  SELECT 
+    psc.ProductSubcategoryID,
+    psc.Name AS SubcategoryName,
+    COUNT(p.ProductID) AS ProductCount
+FROM 
+    production_product p
+     JOIN Production_ProductSubcategory psc ON p.ProductSubcategoryID = psc.ProductSubcategoryID
+GROUP BY 
+    psc.ProductSubcategoryID, psc.Name
+ORDER BY ProductCount DESC;
+	
+
+	
