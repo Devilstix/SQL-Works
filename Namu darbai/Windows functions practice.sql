@@ -84,19 +84,110 @@ ORDER BY CategoryName, total_sales DESC;
 -- calculate a 3-month moving average of sales.
 
 SELECT
+	Metai,
+	Menuo,
+    Menesine_suma,
+    ROUND(AVG(Menesine_suma) OVER (
+        ORDER BY Metai, Menuo
+        ROWS BETWEEN 2 PRECEDING AND CURRENT ROW
+    ), 2) AS moving_avg_3_months
+FROM (
+    SELECT
+        YEAR(soh.OrderDate)  AS Metai,
+        MONTH(soh.OrderDate) AS Menuo,
+        ROUND(SUM(soh.TotalDue),2)    AS Menesine_suma
+    FROM sales_salesorderheader soh
+    GROUP BY
+        YEAR(soh.OrderDate),
+        MONTH(soh.OrderDate)
+) menesinis
+ORDER BY Metai, menuo;
     
 -- 5. Compare Individual Sales to Average Sales: Use the AVG() window func<on to
 -- compare individual sales amounts to the average sales of the respec<ve year.
+
+SELECT
+   SalesOrderID
+    , OrderDate
+    ,YEAR(OrderDate) AS Metai
+   ,TotalDue AS Indv_pardavimai,
+    ROUND(AVG(TotalDue) OVER (
+        PARTITION BY YEAR(OrderDate)
+    ), 2) AS vid_metu_pardavimai
+   , ROUND(TotalDue -  AVG(TotalDue) OVER (
+        PARTITION BY YEAR(OrderDate)
+    ), 2)  AS diff_from_year_avg
+FROM sales_salesorderheader;
+
+
 -- 6. Par<<on Sales by Territory and Rank: Use the DENSE_RANK() window func<on to
 -- rank sales orders by amount within each sales territory.
+
+SELECT
+	st.Name AS Teritorija
+    , soh.TotalDue
+    , DENSE_RANK() OVER 
+    (PARTITION BY st.Name
+    ORDER BY soh.TotalDue ) AS Rankas
+	FROM sales_salesorderheader soh
+	JOIN sales_SalesTerritory st ON 	soh.TerritoryID = st.TerritoryID
+    ORDER BY Rankas;
+    
 -- 7. Calculate Percen<le Sales: Use the PERCENT_RANK() window func<on to calculate
 -- the percen<le rank of sales orders by amount within each year.
+
+SELECT 
+	SalesOrderID
+	,YEAR(OrderDate) AS Metai
+	,TotalDue Pardavimai
+    , ROUND(PERCENT_RANK()  OVER 
+    (PARTITION BY YEAR(OrderDate)
+    ORDER BY TotalDue) * 100, 2)  AS Procnt_rankas
+FROM sales_salesorderheader;
+    
 -- 8. Iden<fy First and Last Sale Date for Each Product: Use the FIRST_VALUE() and
 -- LAST_VALUE() window func<ons to find the first and last sale date for each product.
+
+SELECT DISTINCT
+	sod.ProductID Produkto_ID
+    , pp.Name Produktas
+    , FIRST_VALUE(soh.OrderDate) OVER
+    (PARTITION BY sod.ProductID
+    ORDER BY soh.OrderDate
+    ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) 
+    AS Pirmas_pardavimas
+    , LAST_VALUE(soh.OrderDate) OVER
+    (PARTITION BY sod.ProductID
+    ORDER BY soh.OrderDate
+    ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) 
+    AS Paskutinis_pardavimas
+FROM sales_salesorderheader soh
+JOIN sales_salesorderdetail sod ON soh.SalesOrderID = sod.SalesOrderID
+JOIN production_product pp ON sod.ProductID = pp.ProductID;
+
+
 -- 9. Calculate Cumula<ve Quan<ty Sold: Use the SUM() window func<on to calculate the
 -- cumula<ve quan<ty sold for each product over <me.
+
+SELECT
+    sod.ProductID AS Produkto_ID
+    , pp.Name AS Produktas
+    ,soh.OrderDate
+    , sod.OrderQty AS Pardavimo_kiekis
+    , SUM(sod.OrderQty) OVER (
+        PARTITION BY sod.ProductID
+        ORDER BY soh.OrderDate
+        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+    ) AS Kaupiamas_kiekis
+FROM sales_salesorderheader soh
+JOIN sales_salesorderdetail sod ON soh.SalesOrderID = sod.SalesOrderID
+JOIN production_product pp ON sod.ProductID = pp.ProductID
+ORDER BY sod.ProductID, soh.OrderDate;
+
 -- 10. Compare Sales Growth by Quarter: Use the LAG() window func<on to compare sales
 -- amounts between consecu<ve quarters to calculate quarter-over-quarter growth.
+
+
 -- 11. Determine Employee Ranking by Sales: Use the RANK() window func<on to rank
 -- employees by the total sales they generated.
 -- 12. Segment Customers Based on Total Purchases: Use the NTILE() window func<on to
