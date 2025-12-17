@@ -1,8 +1,30 @@
 -- MySQL tasks AdventureWorks2019_KPI
 -- 1. Apskaičiuok bendrą pardavimų sumą, atskirai online ir direct kanalams.
 
+WITH kanalas AS(
+	SELECT
+    soh.SalesOrderID,
+	CASE
+		WHEN soh.OnlineOrderFlag =  1 THEN 'Online'
+        ELSE 'Direct'
+        END AS Tipas
+	, ROUND(SUM(sod.LineTotal),2) AS Suma
+FROM sales_salesorderheader soh
+JOIN sales_salesorderdetail sod ON soh.SalesOrderID = sod.SalesOrderID
+GROUP BY Tipas)
 
 -- 2. Apskaičiuok vidutinę užsakymo vertę pagal pardavimo kanalą.
+
+SELECT
+	CASE
+		WHEN soh.OnlineOrderFlag =  1 THEN 'Online'
+        ELSE 'Direct'
+        END AS Tipas
+	, ROUND(SUM(sod.LineTotal),2) AS Suma
+FROM sales_salesorderheader soh
+JOIN sales_salesorderdetail sod ON soh.SalesOrderID = sod.SalesOrderID
+GROUP BY Tipas
+ORDER BY Suma DESC;
 -- 3. Apskaičiuok bendrą produktų pardavimo sumą (linetotal), suskirstytą pagal kanalą.
 -- 4. Rask 5 labiausiai parduodamus produktus kiekviename kanale pagal kiekį.
 -- 5. Rask klientus, kurie bent du kartus pirko online arba direct kanalu.
