@@ -1,0 +1,183 @@
+/* ============================================================
+UŽDUOTIS 3 Produktų kategorijų pelningumo analizė per laiką, teritorijose ir pardavimo 
+kanaluose 
+Naudok Production_Product, Production_ProductSubcategory, Production_ProductCategory, 
+Sales_SalesOrderDetail, Sales_SalesTerritory ir Sales_SalesOrderHeader lenteles.
+ 
+- Šiose lentelėse NETURIME savikainos (COGS), todėl „pelningumas“
+  šiame uždavinyje reiškia PAJAMAS (Revenue).
+- Pajamos imamos iš Sales_SalesOrderDetail.LineTotal (eilutės suma).
+============================================================ */
+ 
+ 
+/* ============================================================
+1) Susiek produktus su subkategorijomis, kategorijomis, teritorijomis
+   ir pardavimo kanalais.
+ 
+Idėja: pirmiausia pasidarom „švarią bazę“ su teisingu grūdėtumu:
+Category x Territory x Channel x Year x Quarter.
+============================================================ */
+
+SELECT
+	pc.ProductCategoryID
+    , pc.Name AS CategoryName
+    ,st.TerritoryID 
+    , st.Name AS TeritorryName
+    , CASE
+		WHEN soh.OnlineOrderFlag =  1 THEN 'Online'
+        ELSE 'Direct'
+        END AS Tipas
+	, YEAR(soh.OrderDate) AS Metai
+    , QUARTER(soh.OrderDate) AS Ketvirtis
+	, ROUND(SUM(sod.LineTotal), 2) AS CategoryRevenue
+FROM sales_salesorderdetail sod
+    JOIN production_product p ON sod.ProductID = p.ProductID
+    LEFT JOIN production_productsubcategory psc ON p.ProductSubcategoryID = psc.ProductSubcategoryID
+    LEFT JOIN production_productcategory pc ON psc.ProductCategoryID = pc.ProductCategoryID
+	JOIN sales_salesorderheader soh ON sod.SalesOrderID = soh.SalesOrderID
+	JOIN sales_salesterritory st ON 	soh.TerritoryID = st.TerritoryID
+GROUP BY pc.ProductCategoryID, CategoryName, st.TerritoryID, TeritorryName, Tipas, Metai, Ketvirtis;
+    
+    WITH duomenys AS (
+				SELECT
+		pc.ProductCategoryID
+		, pc.Name AS CategoryName
+		,st.TerritoryID 
+		, st.Name AS TeritorryName
+		, CASE
+			WHEN soh.OnlineOrderFlag =  1 THEN 'Online'
+			ELSE 'Direct'
+			END AS Tipas
+		, YEAR(soh.OrderDate) AS Metai
+		, QUARTER(soh.OrderDate) AS Ketvirtis
+		, ROUND(SUM(sod.LineTotal), 2) AS CategoryRevenue
+	FROM sales_salesorderdetail sod
+		JOIN production_product p ON sod.ProductID = p.ProductID
+		LEFT JOIN production_productsubcategory psc ON p.ProductSubcategoryID = psc.ProductSubcategoryID
+		LEFT JOIN production_productcategory pc ON psc.ProductCategoryID = pc.ProductCategoryID
+		JOIN sales_salesorderheader soh ON sod.SalesOrderID = soh.SalesOrderID
+		JOIN sales_SalesTerritory st ON 	soh.TerritoryID = st.TerritoryID
+	GROUP BY pc.ProductCategoryID, CategoryName, st.TerritoryID, TeritorryName, Tipas, Metai, Ketvirtis)
+		
+        SELECT
+			CategoryName
+			, ROUND(SUM(sod.LineTotal) OVER (
+        PARTITION BY 	Metai
+        ORDER BY soh.OrderDate
+        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+    ), 2) AS running_total_year
+	, ROUND(SUM(sod.LineTotal) OVER (
+		PARTITION BY Ketvirtis
+        ORDER BY soh.OrderDate
+        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+    ), 2) AS running_total_quarter
+    FROM duomenys;
+    
+-- 2. Apskaičiuok bendras pajamas bei runningtotal kiekvienai kategorijai pagal metus ir
+-- ketvirčius.
+
+    WITH duomenys AS (
+    SELECT
+        pc.ProductCategoryID,
+        pc.Name AS CategoryName,
+        st.TerritoryID,
+        st.Name AS TerritoryName,
+        CASE
+            WHEN soh.OnlineOrderFlag = 1 THEN 'Online'
+            ELSE 'Direct'
+        END AS Tipas,
+        YEAR(soh.OrderDate) AS Metai,
+        QUARTER(soh.OrderDate) AS Ketvirtis,
+        ROUND(SUM(sod.LineTotal), 2) AS CategoryRevenue
+    FROM sales_salesorderdetail sod
+        JOIN production_product p ON sod.ProductID = p.ProductID
+        LEFT JOIN production_productsubcategory psc ON p.ProductSubcategoryID = psc.ProductSubcategoryID
+        LEFT JOIN production_productcategory pc ON psc.ProductCategoryID = pc.ProductCategoryID
+        JOIN sales_salesorderheader soh ON sod.SalesOrderID = soh.SalesOrderID
+        JOIN sales_SalesTerritory st ON soh.TerritoryID = st.TerritoryID
+    GROUP BY pc.ProductCategoryID, pc.Name, st.TerritoryID, st.Name, Tipas, Metai, Ketvirtis
+)
+
+SELECT
+    CategoryName,
+    Metai,
+    Ketvirtis,
+    CategoryRevenue,
+     TerritoryName,
+    ROUND(
+	SUM(CategoryRevenue) OVER (
+		PARTITION BY  TerritoryName, Metai
+		ORDER BY Metai, Ketvirtis
+		ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        ), 2
+    ) AS running_total_year,
+    ROUND(
+	SUM(CategoryRevenue) OVER (
+		PARTITION BY TerritoryName, Ketvirtis
+		ORDER BY Metai, Ketvirtis
+		ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        ), 2
+    ) AS running_total_quarter
+FROM duomenys
+ORDER BY Metai, Ketvirtis, CategoryName;
+
+-- 3. Naudok CASE, kad kategorijas suskirstytum į „High Profit“ ir „Low Profit“.
+
+   WITH duomenys AS (
+    SELECT
+        pc.ProductCategoryID,
+        pc.Name AS CategoryName,
+        st.TerritoryID,
+        st.Name AS TerritoryName
+        , NTILE(2) OVER (
+            ORDER BY SUM(sod.LineTotal) DESC
+        ) AS Kategorijos_rankas
+        ,CASE
+            WHEN soh.OnlineOrderFlag = 1 THEN 'Online'
+            ELSE 'Direct'
+        END AS Tipas,
+        YEAR(soh.OrderDate) AS Metai,
+        QUARTER(soh.OrderDate) AS Ketvirtis,
+        ROUND(SUM(sod.LineTotal), 2) AS CategoryRevenue
+    FROM sales_salesorderdetail sod
+        JOIN production_product p ON sod.ProductID = p.ProductID
+        LEFT JOIN production_productsubcategory psc ON p.ProductSubcategoryID = psc.ProductSubcategoryID
+        LEFT JOIN production_productcategory pc ON psc.ProductCategoryID = pc.ProductCategoryID
+        JOIN sales_salesorderheader soh ON sod.SalesOrderID = soh.SalesOrderID
+        JOIN sales_SalesTerritory st ON soh.TerritoryID = st.TerritoryID
+    GROUP BY pc.ProductCategoryID, pc.Name, st.TerritoryID, st.Name, Tipas, Metai, Ketvirtis)
+
+SELECT
+    CategoryName,
+    Metai,
+    Ketvirtis,
+    CategoryRevenue,
+    TerritoryName,
+    CASE 
+        WHEN Kategorijos_rankas = 1 THEN 'High Profit'
+        ELSE 'Low Profit'
+    END AS KategorijosRankingavimas,
+    ROUND(
+        SUM(CategoryRevenue) OVER (
+            PARTITION BY TerritoryName, Metai
+            ORDER BY Metai, Ketvirtis
+            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        ), 2
+    ) AS running_total_year,
+    ROUND(
+        SUM(CategoryRevenue) OVER (
+            PARTITION BY TerritoryName, Ketvirtis
+            ORDER BY Metai, Ketvirtis
+            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        ), 2
+    ) AS running_total_quarter
+FROM duomenys
+ORDER BY Metai, Ketvirtis, CategoryName;
+
+
+
+    
+    
+			
+    
+    

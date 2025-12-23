@@ -11,19 +11,20 @@ USE AutoNuoma;
 
 -- Vartotojai
 CREATE TABLE Vartotojai (
-    VartotojoID INT PRIMARY KEY,
+   VartotojoID INT PRIMARY KEY,
     Vardas VARCHAR(50),
     Pavarde VARCHAR(50),
-    Email VARCHAR(100),
-    Telefonas VARCHAR(20));
+    Email VARCHAR(100) NOT NULL UNIQUE,
+    Telefonas VARCHAR(20) NOT NULL UNIQUE);
+    -- vairavimo stazas ar amzius
 
 -- Darbuotojai
 CREATE TABLE Darbuotojai (
     DarbuotojoID INT PRIMARY KEY,
     Vardas VARCHAR(50),
     Pavarde VARCHAR(50),
-    Email VARCHAR(100),
-    Telefonas VARCHAR(20),
+    Email VARCHAR(100) NOT NULL UNIQUE,
+    Telefonas VARCHAR(20) NOT NULL UNIQUE,
     IdarbinimoData DATE
 );
 
@@ -44,9 +45,9 @@ CREATE TABLE KebuloTipas (
     Aprasymas VARCHAR(255)
 );
 
--- Masinos
+-- Masinos papildyti del technikinio
 CREATE TABLE Masinos (
-    MasinosID INT PRIMARY KEY,
+    MasinosID INT PRIMARY KEY, -- auto pildymas
     KebuloTipoID INT,
     Gamintojas VARCHAR(50),
     Modelis VARCHAR(50),

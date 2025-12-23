@@ -3,18 +3,18 @@
 			-- ======================== --
 
 
-## Verslo idėja:
+    ## Verslo idėja:
 
-„UAB Moderent“ – tai automobilių nuomos įmonė, teikianti įvairių tipų automobilių nuomos paslaugas pagrindiniuose Lietuvos miestuose. 
-Įmonė leidžia klientams pasirinkti automobilį, nuomotis tam tikram laikotarpiui bei atsiskaityti įvairiais būdais (kortele, grynaisiais, bankiniu pavedimu ar internetu).
+	„UAB Moderent“ – tai automobilių nuomos įmonė, teikianti įvairių tipų automobilių nuomos paslaugas pagrindiniuose Lietuvos miestuose. Įmonė leidžia klientams 
+pasirinkti automobilį, nuomotis tam tikram laikotarpiui bei atsiskaityti įvairiais būdais (kortele, grynaisiais, bankiniu pavedimu ar internetu).
  
-## Verslo tikslas:
+    ## Verslo tikslas:
 
 $$ Suteikti klientams patogią, greitą ir patikimą automobilio nuomos paslaugą.
 $$ Efektyviai valdyti automobilių parką ir stebėti nuomas 
 $$ Didinti pajamas per nuomos procesų ir mokėjimų valdymą.
 
-## Lentelių paaiškinimas
+   ## Lentelių paaiškinimas
 
 Lentelė						Verslo atitikmuo / ką atspindi
 
@@ -26,7 +26,7 @@ Masinos						Automobiliai, kuriuos galima išsinuomoti. Saugo gamintoją, model�
 Nuomos						Visos įvykdytos nuomos. Įrašo, kuris klientas, kurioje vietoje, kokį automobilį, kuriam laikui ir per kurį darbuotoją nuomojosi.
 Mokejimai					Įvykdyti mokėjimai už nuomas. Įrašo sumą, datą ir mokėjimo būdą. Padeda stebėti pajamas ir finansinę statistiką.
 
-## Ryšiai tarp lentelių
+  ## Ryšiai tarp lentelių
 
 Iš lentelės										Į lentelę								Tipas
 
