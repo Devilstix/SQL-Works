@@ -131,3 +131,39 @@ JOIN production_productsubcategory psc																					-- Prijungiame produc
 WHERE YEAR(soh.OrderDate) = 2013																							-- Filtruojame tik 2013 metus
 GROUP BY psc.Name
 ORDER BY vidutine_pardavimo_kaina DESC;
+
+
+-- 5. Gamybos ir tiekimo grandinės efektyvumo analizė
+-- Užduotis: Parašykite užklausą, kuri apskaičiuoja prekių tiekimo laiką pagal gamintoją
+
+SELECT 
+    v.Name AS tiekejas,
+    p.Name AS produktas,
+    ROUND(AVG(DATEDIFF(poh.ShipDate, poh.OrderDate))) AS vid_pristatymo_laikas  -- Vidutinis pristatymo laikas, apvalinam iki sveiko skaičiaus
+FROM purchasing_purchaseorderdetail pod															
+JOIN purchasing_purchaseorderheader poh																			-- Priungiam purchaseorderheader (čia yra OrderDate ir ShipDate)
+    ON pod.PurchaseOrderID = poh.PurchaseOrderID															
+JOIN production_product p																											-- Prijungiam production_product  (gauname prekes pavadinima)
+    ON pod.ProductID = p.ProductID
+JOIN purchasing_productvendor pv																							-- Prijungiam purchasing_productvendor (kad sujungtume prekrd ir tiekėjais)
+    ON p.ProductID = pv.ProductID
+JOIN purchasing_vendor v																											-- Prijungiam purchasing_vendor: tiekėjo informacija (pavadinimas, ID)
+    ON pv.BusinessEntityID = v.BusinessEntityID
+GROUP BY v.Name, p.Name
+ORDER BY v.Name, p.Name;
+
+-- 6. Pardavimų sezoniškumo analizė
+-- Užduotis: Parašykite užklausą, kuri apskaičiuoja mėnesio pardavimus 2013 metais,
+-- naudodamiesi SalesOrderHeader duomenimis. 
+
+SELECT
+    MONTH(soh.OrderDate) AS menuo,                    						 -- mėnesio numeris
+    MONTHNAME(soh.OrderDate) AS menuo_pavadinimas,    	-- mėnesio pavadinimas
+    COUNT(*) AS pardavimu_kiekis,                    								 -- kiek užsakymų atlikta
+    ROUND(SUM(soh.TotalDue), 2) AS pardavimu_suma    		 -- bendra pardavimų suma
+FROM sales_salesorderheader soh
+WHERE YEAR(soh.OrderDate) = 2013                     						 -- filtruojame 2013 metus
+GROUP BY MONTH(soh.OrderDate), MONTHNAME(soh.OrderDate)
+ORDER BY MONTH(soh.OrderDate) ASC;
+
+
