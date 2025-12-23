@@ -64,3 +64,52 @@ WHERE YEAR(soh.OrderDate) = 2013													-- Filtruojame tik 2013 metų parda
 GROUP BY pc.Name, st.Name
 ORDER BY st.Name ASC, bendra_suma DESC;
 
+-- 3. Pardavimų departamento darbuotojų našumas
+-- Užduotis: Vadovybė nori įvertinti pardavimų darbuotojų efektyvumą pagal jų priskirtus
+-- departamentus.
+
+WITH employee_sales AS (																												-- Su CTE apskaiciuojam kiekvieno pardavimu darbuotojo bendra pardavimu suma
+    SELECT
+        sp.BusinessEntityID AS EmployeeID,                 
+        p.FirstName AS vardas,                           
+        p.LastName AS pavarde,                           
+        d.DepartmentID,                                  
+        d.Name AS departamentas,                           
+        SUM(soh.TotalDue) AS darbuotojo_pardavimai      
+    FROM sales_salesorderheader soh
+    JOIN sales_salesperson sp                              																			-- Prijungiame sales_salesperson
+        ON soh.SalesPersonID = sp.BusinessEntityID
+    JOIN person_person p                                   																				-- Prijungiame person_person
+        ON sp.BusinessEntityID = p.BusinessEntityID
+    JOIN humanresources_employeedepartmenthistory edh   													 -- Prijungiame humanresources_employeepayhistory
+        ON sp.BusinessEntityID = edh.BusinessEntityID
+       AND edh.EndDate IS NULL                             																			-- Tik aktyvūs departamentai
+    JOIN humanresources_department d                       																-- Prijungiame humanresources_department
+        ON edh.DepartmentID = d.DepartmentID
+    GROUP BY sp.BusinessEntityID, p.FirstName, p.LastName, d.DepartmentID, d.Name)
+
+SELECT
+    EmployeeID AS id,                                     
+    vardas,                                              
+    pavarde,                                             
+    departamentas,                                        
+    ROUND(darbuotojo_pardavimai, 2) AS darbuotojo_pardavimai,  
+    ROUND(AVG(darbuotojo_pardavimai) OVER (PARTITION BY DepartmentID), 2) 
+		AS departamento_pard_vidurkis,                   																			 -- Departamento vidutinė pardavimų suma
+    ROUND(
+        darbuotojo_pardavimai /
+        AVG(darbuotojo_pardavimai) OVER (PARTITION BY DepartmentID) * 100, 1) 
+        AS santykinis_nasumas_proc,                        																		-- Apskaiciuojam santykini našuma procentais
+    CASE                                                 																								-- Vertinimas tekstinis ar virsija vidurki
+        WHEN darbuotojo_pardavimai >
+             AVG(darbuotojo_pardavimai) OVER (PARTITION BY DepartmentID)
+            THEN 'Viršija vidurkį'
+        WHEN darbuotojo_pardavimai =
+             AVG(darbuotojo_pardavimai) OVER (PARTITION BY DepartmentID)
+            THEN 'Atitinka vidurkį'
+        ELSE 'Nesiekia vidurkio'
+    END AS vertinimas
+FROM employee_sales
+ORDER BY departamentas, darbuotojo_pardavimai DESC;      											
+
+
