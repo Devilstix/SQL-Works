@@ -112,4 +112,22 @@ SELECT
 FROM employee_sales
 ORDER BY departamentas, darbuotojo_pardavimai DESC;      											
 
+-- 4. Pardavimų analize pagal laikotarpį ir produktų grupes
+-- Užduotis: Parašykite užklausą, kuri apskaičiuoja bendrą pardavimų sumą per metus (2013)
+-- pagal produktų grupes
 
+SELECT 
+    psc.Name AS prekes_grupe,
+    SUM(sod.OrderQty) AS kiekis,
+    ROUND(SUM(sod.LineTotal), 2) AS pardavimu_suma,															-- Pardavimų suma (LineTotal)
+    ROUND(SUM(sod.LineTotal) / SUM(sod.OrderQty), 2) AS vidutine_pardavimo_kaina	-- Vidutinė pardavimo kaina = pardavimų suma / kiekis 
+FROM sales_salesorderdetail sod
+JOIN sales_salesorderheader soh																								-- Prijungiame sales_salesorderheader (gauname uzsakymo datąa
+    ON sod.SalesOrderID = soh.SalesOrderID
+JOIN production_product p																												-- Prijungiame production_product  (gaunam produktus)
+    ON sod.ProductID = p.ProductID
+JOIN production_productsubcategory psc																					-- Prijungiame production_productsubcategory (gauname subkategorija)
+    ON p.ProductSubcategoryID = psc.ProductSubcategoryID
+WHERE YEAR(soh.OrderDate) = 2013																							-- Filtruojame tik 2013 metus
+GROUP BY psc.Name
+ORDER BY vidutine_pardavimo_kaina DESC;
