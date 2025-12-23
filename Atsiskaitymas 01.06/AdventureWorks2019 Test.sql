@@ -50,17 +50,17 @@ SELECT
     ,st.Name AS regionas
     ,ROUND(SUM(sod.LineTotal), 2) AS bendra_suma
 FROM sales_salesorderdetail sod
-JOIN sales_salesorderheader soh 
+JOIN sales_salesorderheader soh 														-- Prijungiame salesorderheader
     ON sod.SalesOrderID = soh.SalesOrderID
-JOIN production_product p 
+JOIN production_product p 																		-- Prijungiame product
     ON sod.ProductID = p.ProductID
-JOIN production_productsubcategory psc 
-    ON p.ProductSubcategoryID = psc.ProductSubcategoryID
-JOIN production_productcategory pc 
+JOIN production_productsubcategory psc 											-- Prijungiame productsubcategory 
+    ON p.ProductSubcategoryID = psc.ProductSubcategoryID			
+JOIN production_productcategory pc 														-- Prijungiame productcategory
     ON psc.ProductCategoryID = pc.ProductCategoryID
-JOIN sales_salesterritory st 
+JOIN sales_salesterritory st 																	-- Prijungiame salesterritory
     ON soh.TerritoryID = st.TerritoryID
-WHERE YEAR(soh.OrderDate) = 2013												
+WHERE YEAR(soh.OrderDate) = 2013													-- Filtruojame tik 2013 metų pardavimus
 GROUP BY pc.Name, st.Name
 ORDER BY st.Name ASC, bendra_suma DESC;
 
