@@ -7,7 +7,7 @@
 WITH first_order AS (
     SELECT 
         c.customerid
-        , MIN(soh.orderdate) AS first_order_date                           							-- Surandame pirmą kliento užsakymo datą per visą istoriją
+        , MIN(soh.orderdate) AS first_order_date                           						-- Surandame pirmą kliento užsakymo datą per visą istoriją (naudojam CTE)
     FROM sales_salesorderheader soh
     JOIN sales_customer c ON soh.customerid = c.customerid
     GROUP BY c.customerid),
@@ -20,9 +20,9 @@ customers_2013 AS (
        , ROUND(AVG(soh.totaldue), 2) AS uzsakymo_vidurkis_2013				-- Apskaičiuojame jų 2013 m. užsakymų vidutinę sumą
     FROM sales_salesorderheader soh
     JOIN sales_customer c ON soh.customerid = c.customerid
-    JOIN person_person p ON c.personid = p.businessentityid
-    JOIN first_order fo ON fo.customerid = c.customerid
-    WHERE YEAR(fo.first_order_date) = 2013													-- Atrenkame tik tuos klientus, kurių pirmas užsakymas = 2013 m.
+    JOIN person_person p ON c.personid = p.businessentityid						-- Prijungiam person_person (vardas, pavardė)
+    JOIN first_order fo ON fo.customerid = c.customerid								-- Prijungiame pirmo užsakymo CTE
+    WHERE YEAR(fo.first_order_date) = 2013												-- Atrenkame tik tuos klientus, kurių pirmas užsakymas = 2013 m.
     GROUP BY c.customerid, p.firstname, p.lastname)
     
 SELECT																													-- Pateikiame galutinį rezultatą
@@ -33,12 +33,12 @@ SELECT																													-- Pateikiame galutinį rezultatą
     , soh.salesorderid AS uzsakymoID
     , soh.orderdate AS uzsakymo_data
     , ROUND(soh.totaldue, 2) AS suma
-    , DENSE_RANK() OVER 																					-- Priskiriame DENSE_RANK() pagal 2014 m. užsakymo datą
+    , DENSE_RANK() OVER 																					--  Užsakymo eilės numeris (pagal datą, 2014 m.)
 		(PARTITION BY cu.customerid ORDER BY soh.orderdate) AS ranking   
 FROM customers_2013 cu
 LEFT JOIN sales_salesorderheader soh 
     ON cu.customerid = soh.customerid 
-   AND YEAR(soh.orderdate) = 2014																-- Surandame jų 2014 m. užsakymus
+   AND YEAR(soh.orderdate) = 2014																 -- Tik 2014 m. užsakymai
 ORDER BY cu.customerid, ranking;
 
 -- 2. Produktų pardavimų analizė pagal prekių kategorijas ir regionus
@@ -50,15 +50,15 @@ SELECT
     ,st.Name AS regionas
     ,ROUND(SUM(sod.LineTotal), 2) AS bendra_suma
 FROM sales_salesorderdetail sod
-JOIN sales_salesorderheader soh 														-- Prijungiame salesorderheader
+JOIN sales_salesorderheader soh 														-- Prijungiame salesorderheader (gaunam bendra info)
     ON sod.SalesOrderID = soh.SalesOrderID
-JOIN production_product p 																		-- Prijungiame product
+JOIN production_product p 																		-- Prijungiame product (gaunam parduodamas prekes)
     ON sod.ProductID = p.ProductID
-JOIN production_productsubcategory psc 											-- Prijungiame productsubcategory 
+JOIN production_productsubcategory psc 											-- Prijungiame productsubcategory (gaunam subkategorijas)
     ON p.ProductSubcategoryID = psc.ProductSubcategoryID			
-JOIN production_productcategory pc 														-- Prijungiame productcategory
+JOIN production_productcategory pc 														-- Prijungiame productcategory (gaunam kategorijas)
     ON psc.ProductCategoryID = pc.ProductCategoryID
-JOIN sales_salesterritory st 																	-- Prijungiame salesterritory
+JOIN sales_salesterritory st 																	-- Prijungiame salesterritory (gaunam regionus pardavimu)
     ON soh.TerritoryID = st.TerritoryID
 WHERE YEAR(soh.OrderDate) = 2013													-- Filtruojame tik 2013 metų pardavimus
 GROUP BY pc.Name, st.Name
@@ -100,7 +100,7 @@ SELECT
         darbuotojo_pardavimai /
         AVG(darbuotojo_pardavimai) OVER (PARTITION BY DepartmentID) * 100, 1) 
         AS santykinis_nasumas_proc,                        																		-- Apskaiciuojam santykini našuma procentais
-    CASE                                                 																								-- Vertinimas tekstinis ar virsija vidurki
+		CASE                                                 																								-- Vertinimas tekstinis ar virsija vidurki
         WHEN darbuotojo_pardavimai >
              AVG(darbuotojo_pardavimai) OVER (PARTITION BY DepartmentID)
             THEN 'Viršija vidurkį'
@@ -122,7 +122,7 @@ SELECT
     ROUND(SUM(sod.LineTotal), 2) AS pardavimu_suma,															-- Pardavimų suma (LineTotal)
     ROUND(SUM(sod.LineTotal) / SUM(sod.OrderQty), 2) AS vidutine_pardavimo_kaina	-- Vidutinė pardavimo kaina = pardavimų suma / kiekis 
 FROM sales_salesorderdetail sod
-JOIN sales_salesorderheader soh																								-- Prijungiame sales_salesorderheader (gauname uzsakymo datąa
+JOIN sales_salesorderheader soh																								-- Prijungiame sales_salesorderheader (gauname uzsakymo data)
     ON sod.SalesOrderID = soh.SalesOrderID
 JOIN production_product p																												-- Prijungiame production_product  (gaunam produktus)
     ON sod.ProductID = p.ProductID
@@ -157,12 +157,12 @@ ORDER BY v.Name, p.Name;
 -- naudodamiesi SalesOrderHeader duomenimis. 
 
 SELECT
-    MONTH(soh.OrderDate) AS menuo,                    						 -- mėnesio numeris
-    MONTHNAME(soh.OrderDate) AS menuo_pavadinimas,    	-- mėnesio pavadinimas
-    COUNT(*) AS pardavimu_kiekis,                    								 -- kiek užsakymų atlikta
-    ROUND(SUM(soh.TotalDue), 2) AS pardavimu_suma    		 -- bendra pardavimų suma
+    MONTH(soh.OrderDate) AS menuo,                    						 						 -- mėnesio numeris
+    MONTHNAME(soh.OrderDate) AS menuo_pavadinimas,    							 -- mėnesio pavadinimas
+    COUNT(*) AS pardavimu_kiekis,                    								 						 -- kiek užsakymų atlikta
+    ROUND(SUM(soh.TotalDue), 2) AS pardavimu_suma    								 -- bendra pardavimų suma
 FROM sales_salesorderheader soh
-WHERE YEAR(soh.OrderDate) = 2013                     						 -- filtruojame 2013 metus
+WHERE YEAR(soh.OrderDate) = 2013                     						 						 -- filtruojame 2013 metus
 GROUP BY MONTH(soh.OrderDate), MONTHNAME(soh.OrderDate)
 ORDER BY MONTH(soh.OrderDate) ASC;
 
