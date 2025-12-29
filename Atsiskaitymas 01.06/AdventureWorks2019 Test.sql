@@ -6,40 +6,40 @@
 
 WITH first_order AS (
     SELECT 
-        c.customerid
+        c.CustomerID
         , MIN(soh.orderdate) AS first_order_date                           						-- Surandame pirmą kliento užsakymo datą per visą istoriją (naudojam CTE)
     FROM sales_salesorderheader soh
-    JOIN sales_customer c ON soh.customerid = c.customerid
-    GROUP BY c.customerid),
+    JOIN sales_customer c ON soh.CustomerID = c.CustomerID
+    GROUP BY c.CustomerID),
     
 customers_2013 AS (
     SELECT																										
-        c.customerid
-		, p.firstname AS vardas
-       , p.lastname AS pavarde
-       , ROUND(AVG(soh.totaldue), 2) AS uzsakymo_vidurkis_2013				-- Apskaičiuojame jų 2013 m. užsakymų vidutinę sumą
+        c.CustomerID
+		, p.FirstName AS vardas
+       , p.LastName AS pavarde
+       , ROUND(AVG(soh.TotalDue), 2) AS uzsakymo_vidurkis_2013				-- Apskaičiuojame jų 2013 m. užsakymų vidutinę sumą
     FROM sales_salesorderheader soh
-    JOIN sales_customer c ON soh.customerid = c.customerid
-    JOIN person_person p ON c.personid = p.businessentityid						-- Prijungiam person_person (vardas, pavardė)
-    JOIN first_order fo ON fo.customerid = c.customerid								-- Prijungiame pirmo užsakymo CTE
-    WHERE YEAR(fo.first_order_date) = 2013												-- Atrenkame tik tuos klientus, kurių pirmas užsakymas = 2013 m.
-    GROUP BY c.customerid, p.firstname, p.lastname)
+    JOIN sales_customer c ON soh.CustomerID = c.CustomerID
+    JOIN person_person p ON c.PersonID = p.BusinessentityID						-- Prijungiam person_person (vardas, pavardė)
+    JOIN first_order fo ON fo.CustomerID = c.CustomerID								-- Prijungiame pirmo užsakymo CTE
+	WHERE YEAR(fo.first_order_date) = 2013												-- Atrenkame tik tuos klientus, kurių pirmas užsakymas = 2013 m.
+    GROUP BY c.CustomerID, p.FirstName, p.LastName)
     
 SELECT																													-- Pateikiame galutinį rezultatą
-    cu.customerid AS id
+    cu.CustomerID AS id
     , cu.vardas
     , cu.pavarde
     , cu.uzsakymo_vidurkis_2013
-    , soh.salesorderid AS uzsakymoID
-    , soh.orderdate AS uzsakymo_data
-    , ROUND(soh.totaldue, 2) AS suma
+    , soh.SalesOrderID AS uzsakymoID
+    , soh.OrderDate AS uzsakymo_data
+    , ROUND(soh.TotalDue, 2) AS suma
     , DENSE_RANK() OVER 																					--  Užsakymo eilės numeris (pagal datą, 2014 m.)
-		(PARTITION BY cu.customerid ORDER BY soh.orderdate) AS ranking   
+		(PARTITION BY cu.CustomerID ORDER BY soh.OrderDate) AS ranking   
 FROM customers_2013 cu
 LEFT JOIN sales_salesorderheader soh 
-    ON cu.customerid = soh.customerid 
+    ON cu.CustomerID = soh.CustomerID 
    AND YEAR(soh.orderdate) = 2014																 -- Tik 2014 m. užsakymai
-ORDER BY cu.customerid, ranking;
+ORDER BY cu.CustomerID, ranking;
 
 -- 2. Produktų pardavimų analizė pagal prekių kategorijas ir regionus
 -- Užduotis: Parašykite užklausą, kuri apskaičiuoja bendrą produktų pardavimų sumą pagal prekių
@@ -70,12 +70,12 @@ ORDER BY st.Name ASC, bendra_suma DESC;
 
 WITH employee_sales AS (																												-- Su CTE apskaiciuojam kiekvieno pardavimu darbuotojo bendra pardavimu suma
     SELECT
-        sp.BusinessEntityID AS EmployeeID,                 
-        p.FirstName AS vardas,                           
-        p.LastName AS pavarde,                           
-        d.DepartmentID,                                  
-        d.Name AS departamentas,                           
-        SUM(soh.TotalDue) AS darbuotojo_pardavimai      
+        sp.BusinessEntityID AS EmployeeID                 
+        , p.FirstName AS vardas                           
+        , p.LastName AS pavarde                           
+        , d.DepartmentID                                  
+        , d.Name AS departamentas                           
+        , SUM(soh.TotalDue) AS darbuotojo_pardavimai      
     FROM sales_salesorderheader soh
     JOIN sales_salesperson sp                              																			-- Prijungiame sales_salesperson
         ON soh.SalesPersonID = sp.BusinessEntityID
@@ -89,12 +89,12 @@ WITH employee_sales AS (																												-- Su CTE apskaiciuojam kiek
     GROUP BY sp.BusinessEntityID, p.FirstName, p.LastName, d.DepartmentID, d.Name)
 
 SELECT
-    EmployeeID AS id,                                     
-    vardas,                                              
-    pavarde,                                             
-    departamentas,                                        
-    ROUND(darbuotojo_pardavimai, 2) AS darbuotojo_pardavimai,  
-    ROUND(AVG(darbuotojo_pardavimai) OVER (PARTITION BY DepartmentID), 2) 
+    EmployeeID AS id                                     
+	, vardas                                              
+    , pavarde                                             
+    , departamentas                                        
+    , ROUND(darbuotojo_pardavimai, 2) AS darbuotojo_pardavimai  
+    , ROUND(AVG(darbuotojo_pardavimai) OVER (PARTITION BY DepartmentID), 2) 
 		AS departamento_pard_vidurkis,                   																			 -- Departamento vidutinė pardavimų suma
     ROUND(
         darbuotojo_pardavimai /
@@ -117,10 +117,10 @@ ORDER BY departamentas, darbuotojo_pardavimai DESC;
 -- pagal produktų grupes
 
 SELECT 
-    psc.Name AS prekes_grupe,
-    SUM(sod.OrderQty) AS kiekis,
-    ROUND(SUM(sod.LineTotal), 2) AS pardavimu_suma,															-- Pardavimų suma (LineTotal)
-    ROUND(SUM(sod.LineTotal) / SUM(sod.OrderQty), 2) AS vidutine_pardavimo_kaina	-- Vidutinė pardavimo kaina = pardavimų suma / kiekis 
+    psc.Name AS prekes_grupe
+    , SUM(sod.OrderQty) AS kiekis
+    , ROUND(SUM(sod.LineTotal), 2) AS pardavimu_suma															-- Pardavimų suma (LineTotal)
+    , ROUND(SUM(sod.LineTotal) / SUM(sod.OrderQty), 2) AS vidutine_pardavimo_kaina	-- Vidutinė pardavimo kaina = pardavimų suma / kiekis 
 FROM sales_salesorderdetail sod
 JOIN sales_salesorderheader soh																								-- Prijungiame sales_salesorderheader (gauname uzsakymo data)
     ON sod.SalesOrderID = soh.SalesOrderID
@@ -137,9 +137,9 @@ ORDER BY vidutine_pardavimo_kaina DESC;
 -- Užduotis: Parašykite užklausą, kuri apskaičiuoja prekių tiekimo laiką pagal gamintoją
 
 SELECT 
-    v.Name AS tiekejas,
-    p.Name AS produktas,
-    ROUND(AVG(DATEDIFF(poh.ShipDate, poh.OrderDate))) AS vid_pristatymo_laikas  -- Vidutinis pristatymo laikas, apvalinam iki sveiko skaičiaus
+    v.Name AS tiekejas
+    , p.Name AS produktas
+    , ROUND(AVG(DATEDIFF(poh.ShipDate, poh.OrderDate))) AS vid_pristatymo_laikas  -- Vidutinis pristatymo laikas, apvalinam iki sveiko skaičiaus
 FROM purchasing_purchaseorderdetail pod															
 JOIN purchasing_purchaseorderheader poh																			-- Priungiam purchaseorderheader (čia yra OrderDate ir ShipDate)
     ON pod.PurchaseOrderID = poh.PurchaseOrderID															
@@ -157,10 +157,10 @@ ORDER BY v.Name, p.Name;
 -- naudodamiesi SalesOrderHeader duomenimis. 
 
 SELECT
-    MONTH(soh.OrderDate) AS menuo,                    						 						 -- mėnesio numeris
-    MONTHNAME(soh.OrderDate) AS menuo_pavadinimas,    							 -- mėnesio pavadinimas
-    COUNT(*) AS pardavimu_kiekis,                    								 						 -- kiek užsakymų atlikta
-    ROUND(SUM(soh.TotalDue), 2) AS pardavimu_suma    								 -- bendra pardavimų suma
+    MONTH(soh.OrderDate) AS menuo                    						 						 
+    , MONTHNAME(soh.OrderDate) AS menesio_pavadinimas    						 -- mėnuo
+    , COUNT(*) AS pardavimu_kiekis                   								 						 -- kiek užsakymų atlikta
+    , ROUND(SUM(soh.TotalDue), 2) AS pardavimu_suma    								 -- bendra pardavimų suma
 FROM sales_salesorderheader soh
 WHERE YEAR(soh.OrderDate) = 2013                     						 						 -- filtruojame 2013 metus
 GROUP BY MONTH(soh.OrderDate), MONTHNAME(soh.OrderDate)

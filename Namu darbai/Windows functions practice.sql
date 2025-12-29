@@ -187,9 +187,43 @@ ORDER BY sod.ProductID, soh.OrderDate;
 -- 10. Compare Sales Growth by Quarter: Use the LAG() window func<on to compare sales
 -- amounts between consecu<ve quarters to calculate quarter-over-quarter growth.
 
+WITH quarterly AS 
+	(SELECT
+        YEAR(OrderDate) AS sales_year,
+        QUARTER(OrderDate) AS sales_quarter,
+        SUM(TotalDue) AS sales
+    FROM sales_salesorderheader
+    GROUP BY
+        YEAR(OrderDate),
+        QUARTER(OrderDate)
+),
+sales_with_lag AS (
+    SELECT
+        sales_year,
+        sales_quarter,
+        sales,
+        LAG(sales) OVER (
+            ORDER BY sales_year, sales_quarter
+        ) AS prev_quarter_sales
+    FROM quarterly
+)
+SELECT
+    sales_year,
+    sales_quarter,
+    sales,
+    prev_quarter_sales,
+    ROUND(
+        (sales - prev_quarter_sales)
+        / prev_quarter_sales * 100,
+        2
+    ) AS growth_percent
+FROM sales_lag
+ORDER BY sales_year, sales_quarter;
 
 -- 11. Determine Employee Ranking by Sales: Use the RANK() window func<on to rank
 -- employees by the total sales they generated.
+
+
 -- 12. Segment Customers Based on Total Purchases: Use the NTILE() window func<on to
 -- divide customers into quar<les based on their total purchase amount.
 -- 13. Calculate YTD (Year-to-Date) Sales: Use the SUM() window func<on with a specific
