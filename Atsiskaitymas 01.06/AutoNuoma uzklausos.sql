@@ -2,145 +2,189 @@
 -- ========== UAB MODERENT ========== --
 			-- ======================== --
 
--- Visos nuomos su pilna informacija
-SELECT 
-    n.NuomosID
-    , v.Vardas AS VartotojoVardas
-    , v.Pavarde AS VartotojoPavarde
-    , m.Gamintojas
-    , m.Modelis
-    , vp.Pavadinimas AS PaemimoVieta
-    , vg.Pavadinimas AS GrazinimoVieta
-    , DATE(n.NuomosData) AS Nuomos_pradzia
-    , DATE(n.GrazinimoData) AS Nuomos_pabaiga
-    , DATEDIFF(n.GrazinimoData, n.NuomosData) AS NuomosDienos
-    , n.VisaSuma
-FROM nuomos n
-JOIN vartotojai v ON n.VartotojoID = v.VartotojoID
-JOIN masinos m ON n.MasinosID = m.MasinosID
-JOIN vietoves vp ON n.PaemimoVietaID = vp.VietovesID
-JOIN vietoves vg ON n.PalikimoVietaID = vg.VietovesID;
 
--- Kiek kartų kiekvienas automobilis buvo išnuomotas ir paskutinė nuomos data
+-- Parodyti visas nuomas
+
 SELECT 
-    m.Gamintojas
-    , m.Modelis
-    , COUNT(n.NuomosID) AS NuomosKiekis
-    , MAX(n.NuomosData) AS PaskutineNuoma
-FROM masinos m
-LEFT JOIN nuomos n ON m.MasinosID = n.MasinosID
+    n.NuomosID,
+    v.Vardas,
+    v.Pavarde,
+    m.Gamintojas,
+    m.Modelis,
+    n.NuomosData,
+    n.GrazinimoData,
+    n.VisaSuma AS BendraKaina,
+    d.Suma AS Depozitas,
+    d.Grazintas,
+    GROUP_CONCAT(p.Pavadinimas SEPARATOR ', ') AS PapildomosPaslaugos
+FROM Nuomos n
+JOIN Vartotojai v 
+    ON n.VartotojoID = v.VartotojoID
+JOIN Masinos m 
+    ON n.MasinosID = m.MasinosID
+LEFT JOIN Depozitai d 
+    ON n.NuomosID = d.NuomosID
+LEFT JOIN NuomosPaslaugos np 
+    ON n.NuomosID = np.NuomosID
+LEFT JOIN PapildomosPaslaugos p 
+    ON np.PaslaugosID = p.PaslaugosID
+GROUP BY 
+    n.NuomosID,
+    v.Vardas,
+    v.Pavarde,
+    m.Gamintojas,
+    m.Modelis,
+    n.NuomosData,
+    n.GrazinimoData,
+    n.VisaSuma,
+    d.Suma,
+    d.Grazintas
+ORDER BY n.NuomosData DESC;
+
+-- Nuomos su depozitais ir grąžinimo statusu
+SELECT 
+    n.NuomosID,
+    v.Vardas, v.Pavarde,
+    m.Gamintojas, m.Modelis,
+    d.Suma AS Depozitas,
+    d.Grazintas
+FROM Nuomos n
+JOIN Vartotojai v ON n.VartotojoID = v.VartotojoID
+JOIN Masinos m ON n.MasinosID = m.MasinosID
+LEFT JOIN Depozitai d ON n.NuomosID = d.NuomosID
+ORDER BY n.NuomosData DESC;
+
+-- Nuomų suma pagal miestą (paėmimo vieta)
+SELECT 
+    vt.Miestas,
+    COUNT(n.NuomosID) AS NuomuKiekis,
+    SUM(n.VisaSuma) AS BendraSuma
+FROM Nuomos n
+JOIN Vietoves vt ON n.PaemimoVietaID = vt.VietovesID
+GROUP BY vt.Miestas
+ORDER BY BendraSuma DESC;
+
+-- Automobiliu technine apžiūra
+SELECT 
+    m.MasinosID,
+    m.Gamintojas, m.Modelis,
+    MAX(tp.GaliojaIki) AS TechnikineGaliojaIki
+FROM Masinos m
+LEFT JOIN TechninePrieziura tp ON m.MasinosID = tp.MasinosID AND tp.Tipas = 'TA'
 GROUP BY m.MasinosID, m.Gamintojas, m.Modelis
-ORDER BY PaskutineNuoma DESC;
+ORDER BY TechnikineGaliojaIki DESC;
 
--- Kiekvieno vartotojo nuomos su kainomis ir mokėjimo būdu
+-- Populiariausios papildomos paslaugos
 SELECT 
-    v.Vardas
-    , v.Pavarde
-    , m.Gamintojas
-    , m.Modelis
-    , m.DienosKaina
-    , DATEDIFF(n.GrazinimoData, n.NuomosData) AS NuomosDienos
-    , n.VisaSuma
-    , mk.MokejimoBudas
-FROM vartotojai v
-JOIN nuomos n ON v.VartotojoID = n.VartotojoID
-JOIN masinos m ON n.MasinosID = m.MasinosID
-JOIN mokejimai mk ON n.NuomosID = mk.NuomosID
+    p.Pavadinimas,
+    COUNT(np.NuomosID) AS Kiekis
+FROM NuomosPaslaugos np
+JOIN PapildomosPaslaugos p ON np.PaslaugosID = p.PaslaugosID
+GROUP BY p.Pavadinimas
+ORDER BY Kiekis DESC;
+
+-- Darbuotojų veiksmų žurnalas (audit)
+SELECT 
+    dz.ZurnaloID,
+    d.Vardas, d.Pavarde,
+    dz.Veiksmas,
+    dz.LentelesPavadinimas,
+    dz.IrasaID,
+    dz.Data
+FROM VeiksmuZurnalas dz
+JOIN Darbuotojai d ON dz.DarbuotojoID = d.DarbuotojoID
+ORDER BY dz.Data DESC;
+
+-- Nuomos su statuso aprašymu pagal sumą
+SELECT 
+    n.NuomosID,
+    v.Vardas, v.Pavarde,
+    m.Gamintojas, m.Modelis,
+    n.VisaSuma,
+    CASE 
+        WHEN n.VisaSuma < 50 THEN 'Maža nuoma'
+        WHEN n.VisaSuma BETWEEN 50 AND 100 THEN 'Vidutinė nuoma'
+        ELSE 'Brangi nuoma'
+    END AS NuomosTipas
+FROM Nuomos n
+JOIN Vartotojai v ON n.VartotojoID = v.VartotojoID
+JOIN Masinos m ON n.MasinosID = m.MasinosID
 ORDER BY n.VisaSuma DESC;
 
--- Populiariausias kėbulo tipas
+-- Kiekvieno vartotojo nuomų statistika
 SELECT 
-    k.Tipas
-    , COUNT(n.NuomosID) AS NuomosKiekis
-FROM kebulotipas k
-JOIN masinos m ON k.KebuloTipoID = m.KebuloTipoID
-JOIN nuomos n ON m.MasinosID = n.MasinosID
-GROUP BY k.Tipas
-ORDER BY NuomosKiekis DESC
-LIMIT 1;
+    v.Vardas, v.Pavarde,
+    COUNT(n.NuomosID) AS NuomuKiekis,
+    SUM(n.VisaSuma) AS BendraSuma,
+    AVG(n.VisaSuma) AS VidutineKaina,
+    CASE
+        WHEN SUM(n.VisaSuma) > 300 THEN 'VIP klientas'
+        ELSE 'Įprastas klientas'
+    END AS KlientoTipas
+FROM Nuomos n
+JOIN Vartotojai v ON n.VartotojoID = v.VartotojoID
+GROUP BY v.VartotojoID
+ORDER BY BendraSuma DESC;
 
--- Kiek kiekviename nuomos centre buvo išnuomota automobilių
+-- Nuomos pagal miestus su kategorijomis
 SELECT 
-    v.Pavadinimas AS NuomosCentras
-    , v.Miestas
-    , COUNT(n.NuomosID) AS IsnuomotuAutomobiliuKiekis
-FROM vietoves v
-JOIN nuomos n ON v.VietovesID = n.PaemimoVietaID
-GROUP BY v.Pavadinimas, v.Miestas
-ORDER BY IsnuomotuAutomobiliuKiekis DESC;
+    vt.Miestas,
+    COUNT(n.NuomosID) AS NuomuSkaicius,
+    SUM(n.VisaSuma) AS BendraSuma,
+    CASE
+        WHEN COUNT(n.NuomosID) >= 3 THEN 'Populiarus miestas'
+        ELSE 'Mažiau populiarus'
+    END AS MiestoTipas
+FROM Nuomos n
+JOIN Vietoves vt ON n.PaemimoVietaID = vt.VietovesID
+GROUP BY vt.Miestas
+ORDER BY BendraSuma DESC;
 
--- Darbuotojų aptarnautų nuomų skaičius
+-- Darbuotojų nuomų valdymas
 SELECT 
-    d.Vardas
-    , d.Pavarde
-    , COUNT(n.NuomosID) AS AptarnautaNuomu
-FROM darbuotojai d
-JOIN nuomos n ON d.DarbuotojoID = n.DarbuotojoID
-GROUP BY d.Vardas, d.Pavarde;
+    d.Vardas, d.Pavarde,
+    COUNT(n.NuomosID) AS NuomuSkaicius,
+    SUM(n.VisaSuma) AS Pajamos,
+    CASE
+        WHEN COUNT(n.NuomosID) > 3 THEN 'Aktyvus darbuotojas'
+        ELSE 'Mažiau aktyvus'
+    END AS VeiklosTipas
+FROM Nuomos n
+JOIN Darbuotojai d ON n.DarbuotojoID = d.DarbuotojoID
+GROUP BY d.DarbuotojoID
+ORDER BY NuomuSkaicius DESC;
 
--- Visi mokėjimai su vartotojais
+--  Automobiliai, kurių techninė apžiūra greitai baigsis
 SELECT 
-    m.MokejimoID
-    , v.Vardas
-    , v.Pavarde
-    , m.Suma
-    , m.MokejimoBudas
-    , m.MokejimoData
-FROM mokejimai m
-JOIN nuomos n ON m.NuomosID = n.NuomosID
-JOIN vartotojai v ON n.VartotojoID = v.VartotojoID;
+    m.Gamintojas, m.Modelis,
+    MAX(tp.GaliojaIki) AS TechnikineGaliojaIki,
+    CASE 
+        WHEN MAX(tp.GaliojaIki) < CURDATE() + INTERVAL 30 DAY THEN 'Reikia atnaujinti'
+        ELSE 'Galioja'
+    END AS Statusas
+FROM Masinos m
+LEFT JOIN TechninePrieziura tp ON m.MasinosID = tp.MasinosID AND tp.Tipas='TA'
+GROUP BY m.MasinosID
+ORDER BY TechnikineGaliojaIki ASC;
 
--- Vartotojai, kurie išleido daugiau nei vidurkis
+-- Nuomos su visomis paslaugomis ir depozitu kaip viena eilutė
 SELECT 
-    v.Vardas
-    , v.Pavarde
-    , SUM(n.VisaSuma) AS BendraSuma
-FROM vartotojai v
-JOIN nuomos n ON v.VartotojoID = n.VartotojoID
-GROUP BY v.Vardas, v.Pavarde
-HAVING SUM(n.VisaSuma) > (
-    SELECT AVG(VisaSuma)
-    FROM nuomos
-);
+    n.NuomosID,
+    v.Vardas, v.Pavarde,
+    m.Gamintojas, m.Modelis,
+    n.VisaSuma,
+    d.Suma AS Depozitas,
+    GROUP_CONCAT(p.Pavadinimas SEPARATOR ', ') AS PapildomosPaslaugos,
+    CASE 
+        WHEN d.Grazintas = 1 THEN 'Depozitas grąžintas'
+        ELSE 'Depozitas negrąžintas'
+    END AS DepozitoStatusas
+FROM Nuomos n
+JOIN Vartotojai v ON n.VartotojoID = v.VartotojoID
+JOIN Masinos m ON n.MasinosID = m.MasinosID
+LEFT JOIN Depozitai d ON n.NuomosID = d.NuomosID
+LEFT JOIN NuomosPaslaugos np ON n.NuomosID = np.NuomosID
+LEFT JOIN PapildomosPaslaugos p ON np.PaslaugosID = p.PaslaugosID
+GROUP BY n.NuomosID, v.Vardas, v.Pavarde, m.Gamintojas, m.Modelis, n.VisaSuma, d.Suma, d.Grazintas
+ORDER BY n.NuomosData DESC;
 
--- Automobiliai, kurie niekada nebuvo išnuomoti
-SELECT 
-    m.Gamintojas
-    , m.Modelis
-FROM masinos m
-LEFT JOIN nuomos n ON m.MasinosID = n.MasinosID
-WHERE n.NuomosID IS NULL;
-
--- Pajamos ir nuomų skaičius pagal mėnesį ir metus
-SELECT 
-    YEAR(n.NuomosData) AS Metai
-    , MONTH(n.NuomosData) AS Menuo
-    , COUNT(n.NuomosID) AS NuomuSkaicius
-    , SUM(n.VisaSuma) AS Pajamos
-FROM nuomos n
-GROUP BY Metai, Menuo
-ORDER BY Metai, Menuo;
-
--- Patikrinimas ar suma atitinka skaičiavimą
-SELECT 
-    n.NuomosID
-    , m.DienosKaina
-    , DATEDIFF(n.GrazinimoData, n.NuomosData) AS Dienos
-    , n.VisaSuma
-    , (m.DienosKaina * DATEDIFF(n.GrazinimoData, n.NuomosData)) AS TuretuButi
-    , CASE 
-        WHEN n.VisaSuma = (m.DienosKaina * DATEDIFF(n.GrazinimoData, n.NuomosData))
-        THEN 'Sutampa'
-        ELSE 'Nesutampa'
-      END AS Tikrinimas
-FROM nuomos n
-JOIN masinos m ON n.MasinosID = m.MasinosID;
-
--- Dažniausiai naudojamas mokėjimo būdas
-SELECT 
-    MokejimoBudas
-    , COUNT(*) AS KiekKartu
-FROM mokejimai
-GROUP BY MokejimoBudas
-ORDER BY KiekKartu DESC
-LIMIT 1;
