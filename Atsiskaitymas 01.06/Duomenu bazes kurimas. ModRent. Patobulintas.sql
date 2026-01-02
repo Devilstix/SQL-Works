@@ -60,6 +60,16 @@ CREATE TABLE KebuloTipas (
 );
 
 -- =========================
+-- AUTOMOBILIU KLASES
+-- =========================
+CREATE TABLE AutomobiliuKlases (
+    KlasesID INT PRIMARY KEY AUTO_INCREMENT,
+    Pavadinimas ENUM('Ekonomine','Standartine','Premium') UNIQUE,
+    MinimalusVairavimoStazas INT NOT NULL,
+    Aprasymas VARCHAR(255)
+);
+
+-- =========================
 -- AUTOMOBILIAI
 -- =========================
 CREATE TABLE Masinos (
@@ -130,15 +140,22 @@ CREATE TABLE Depozitai (
     FOREIGN KEY (NuomosID) REFERENCES Nuomos(NuomosID)
 );
 
+ALTER TABLE Depozitai
+ADD COLUMN Busena ENUM('Gautas','Neapmoketas','Grazintas') DEFAULT 'Neapmoketas';
+
 -- =========================
 -- PAPILDOMOS PASLAUGOS
 -- =========================
 CREATE TABLE PapildomosPaslaugos (
     PaslaugosID INT PRIMARY KEY AUTO_INCREMENT,
     Pavadinimas VARCHAR(100),
-    DienosKaina DECIMAL(10,2)
+    Aprasymas VARCHAR(255),
+    Kaina DECIMAL(10,2)
 );
 
+-- =========================
+-- NUOMOS PASLAUGOS
+-- =========================
 CREATE TABLE NuomosPaslaugos (
     NuomosID INT,
     PaslaugosID INT,
@@ -176,15 +193,7 @@ CREATE TABLE VeiksmuZurnalas (
     FOREIGN KEY (DarbuotojoID) REFERENCES Darbuotojai(DarbuotojoID)
 );
 
--- =========================
--- AUTOMOBILIU KLASES
--- =========================
-CREATE TABLE AutomobiliuKlases (
-    KlasesID INT PRIMARY KEY AUTO_INCREMENT,
-    Pavadinimas ENUM('Ekonomine','Standartine','Premium') UNIQUE,
-    MinimalusVairavimoStazas INT NOT NULL,
-    Aprasymas VARCHAR(255)
-);
+
 
 -- =========================
 -- AUTO NUOTRAUKOS
@@ -300,35 +309,36 @@ INSERT INTO Vietoves (Pavadinimas, Adresas, Miestas, Rajonas, PastoKodas) VALUES
 -- Vartotojai (30)
 INSERT INTO Vartotojai (Vardas, Pavarde, GimimoData, VairavimoStazas, VairuotojoPazymejimoNr, VairuotojoPazymejimoGaliojaIki, Email, Telefonas) VALUES
 ('Jonas','Petraitis','1985-05-12',5,'LT123456','2030-12-31','jonas.petraitis@gmail.com','+37060000101'),
-('Aiste','Kazlauskiene','1990-08-22',2,'LT223344','2028-06-30','aiste.kaz@gmail.com','+37060000102'),
-('Mantas','Jankauskas','1995-02-15',4,'LT334455','2029-11-30','mantas.j@gmail.com','+37060000103'),
+('Aiste','Kazlauskiene','1990-08-22',5,'LT223344','2028-06-30','aiste.kaz@gmail.com','+37060000102'),
+('Mantas','Jankauskas','1995-02-15',5,'LT334455','2029-11-30','mantas.j@gmail.com','+37060000103'),
 ('Rasa','Dirgelyte','1988-09-03',6,'LT445566','2032-01-01','rasa.dirg@gmail.com','+37060000104'),
-('Tomas','Vasiliauskas','1992-12-11',3,'LT556677','2030-05-15','tomas.vas@gmail.com','+37060000105'),
-('Laura','Stankeviciute','1994-03-21',1,'LT667788','2027-10-10','laura.st@gmail.com','+37060000106'),
+('Tomas','Vasiliauskas','1992-12-11',5,'LT556677','2030-05-15','tomas.vas@gmail.com','+37060000105'),
+('Laura','Stankeviciute','1994-03-21',5,'LT667788','2027-10-10','laura.st@gmail.com','+37060000106'),
 ('Darius','Kavaliauskas','1980-07-07',10,'LT778899','2033-03-20','darius.kav@gmail.com','+37060000107'),
-('Simona','Gelaite','1993-11-18',2,'LT889900','2028-08-25','simona.g@gmail.com','+37060000108'),
+('Simona','Gelaite','1993-11-18',5,'LT889900','2028-08-25','simona.g@gmail.com','+37060000108'),
 ('Edgaras','Pocius','1987-06-30',7,'LT990011','2031-09-15','edgaras.p@gmail.com','+37060000109'),
-('Inga','Barauskaite','1996-01-05',1,'LT101112','2027-12-31','inga.b@gmail.com','+37060000110'),
-('Karolis','Urbonas','1991-05-15',3,'LT101113','2030-11-20','karolis.u@gmail.com','+37060000111'),
-('Egle','Paulauskiene','1992-08-21',2,'LT101114','2028-12-31','egle.p@gmail.com','+37060000112'),
+('Inga','Barauskaite','1996-01-05',5,'LT101112','2027-12-31','inga.b@gmail.com','+37060000110'),
+('Karolis','Urbonas','1991-05-15',5,'LT101113','2030-11-20','karolis.u@gmail.com','+37060000111'),
+('Egle','Paulauskiene','1992-08-21',5,'LT101114','2028-12-31','egle.p@gmail.com','+37060000112'),
 ('Mindaugas','Petraitis','1989-03-11',6,'LT101115','2032-05-10','mindaugas.p@gmail.com','+37060000113'),
-('Ruta','Jankauskiene','1995-09-29',1,'LT101116','2027-08-15','ruta.j@gmail.com','+37060000114'),
+('Ruta','Jankauskiene','1995-09-29',5,'LT101116','2027-08-15','ruta.j@gmail.com','+37060000114'),
 ('Tadas','Kazlauskas','1986-12-05',8,'LT101117','2032-02-20','tadas.k@gmail.com','+37060000115'),
-('Aurelija','Barauskiene','1993-07-17',2,'LT101118','2028-09-30','aurelija.b@gmail.com','+37060000116'),
-('Evaldas','Petrauskas','1990-11-22',4,'LT101119','2029-05-01','evaldas.p@gmail.com','+37060000117'),
-('Indre','Stankeviciute','1994-04-04',1,'LT101120','2027-06-20','indre.s@gmail.com','+37060000118'),
+('Aurelija','Barauskiene','1993-07-17',5,'LT101118','2028-09-30','aurelija.b@gmail.com','+37060000116'),
+('Evaldas','Petrauskas','1990-11-22',5,'LT101119','2029-05-01','evaldas.p@gmail.com','+37060000117'),
+('Indre','Stankeviciute','1994-04-04',5,'LT101120','2027-06-20','indre.s@gmail.com','+37060000118'),
 ('Dovydas','Zukauskas','1988-10-30',7,'LT101121','2031-11-15','dovydas.z@gmail.com','+37060000119'),
-('Laura','Paulauskiene','1992-02-14',3,'LT101122','2030-03-01','laura.p@gmail.com','+37060000120'),
+('Laura','Paulauskiene','1992-02-14',5,'LT101122','2030-03-01','laura.p@gmail.com','+37060000120'),
 ('Marius','Petraitis','1987-08-08',5,'LT101123','2030-12-31','marius.p@gmail.com','+37060000121'),
-('Ieva','Jankauskaite','1996-06-10',1,'LT101124','2027-09-10','ieva.j@gmail.com','+37060000122'),
+('Ieva','Jankauskaite','1996-06-10',5,'LT101124','2027-09-10','ieva.j@gmail.com','+37060000122'),
 ('Dainius','Kazlauskas','1985-03-19',9,'LT101125','2032-01-20','dainius.k@gmail.com','+37060000123'),
-('Simona','Urboniene','1993-12-05',2,'LT101126','2028-10-30','simona.u@gmail.com','+37060000124'),
+('Simona','Urboniene','1993-12-05',5,'LT101126','2028-10-30','simona.u@gmail.com','+37060000124'),
 ('Andrius','Stankevicius','1989-05-25',6,'LT101127','2031-04-15','andrius.s@gmail.com','+37060000125'),
-('Inga','Paulauskiene','1994-11-11',3,'LT101128','2030-06-30','inga.p@gmail.com','+37060000126'),
-('Rokas','Petraitis','1990-09-09',4,'LT101129','2029-12-01','rokas.p@gmail.com','+37060000127'),
-('Laura','Jankauskaite','1995-01-01',2,'LT101130','2028-07-20','laura.j@gmail.com','+37060000128'),
+('Inga','Paulauskiene','1994-11-11',5,'LT101128','2030-06-30','inga.p@gmail.com','+37060000126'),
+('Rokas','Petraitis','1990-09-09',5,'LT101129','2029-12-01','rokas.p@gmail.com','+37060000127'),
+('Laura','Jankauskaite','1995-01-01',5,'LT101130','2028-07-20','laura.j@gmail.com','+37060000128'),
 ('Darius','Kazlauskas','1988-02-28',5,'LT101131','2030-10-15','darius.k@gmail.com','+37060000129'),
-('Egle','Urboniene','1991-04-04',3,'LT101132','2030-01-30','egle.u@gmail.com','+37060000130');
+('Egle','Urboniene','1991-04-04',5,'LT101132','2030-01-30','egle.u@gmail.com','+37060000130');
+
 
 -- Darbuotojai (5)
 INSERT INTO Darbuotojai (Vardas, Pavarde, Email, Telefonas, IdarbinimoData) VALUES
@@ -376,23 +386,23 @@ INSERT INTO MasinuNuotraukos (MasinosID, NuotraukosURL) VALUES
 
 -- TechninePrieziura
 INSERT INTO TechninePrieziura (MasinosID, Tipas, AtlikimoData, GaliojaIki, Aprasymas, Kaina) VALUES
-(1,'TA','2023-01-10','2025-01-10','Reguliari TA',50.00),
-(2,'TA','2023-06-15','2025-06-15','Reguliari TA',50.00),
-(3,'TA','2023-03-20','2025-03-20','Reguliari TA',55.00),
-(4,'TA','2023-07-05','2025-07-05','Reguliari TA',55.00),
-(5,'TA','2023-02-28','2025-02-28','Reguliari TA',60.00),
-(6,'TA','2023-01-12','2025-01-12','Reguliari TA',45.00),
-(7,'TA','2023-08-10','2025-08-10','Reguliari TA',50.00),
-(8,'TA','2023-04-18','2025-04-18','Reguliari TA',60.00),
-(9,'TA','2023-03-01','2025-03-01','Reguliari TA',48.00),
-(10,'TA','2023-05-15','2025-05-15','Reguliari TA',50.00),
-(11,'TA','2023-01-20','2025-01-20','Reguliari TA',40.00),
-(12,'TA','2023-06-01','2025-06-01','Reguliari TA',42.00),
-(13,'TA','2023-02-10','2025-02-10','Reguliari TA',55.00),
-(14,'TA','2023-04-05','2025-04-05','Reguliari TA',50.00),
-(15,'TA','2023-03-15','2025-03-15','Reguliari TA',60.00);
+(1,'TA','2024-01-10','2026-01-10','Reguliari TA',50.00),
+(2,'TA','2024-06-15','2026-06-15','Reguliari TA',50.00),
+(3,'TA','2024-03-20','2026-03-20','Reguliari TA',55.00),
+(4,'TA','2024-07-05','2026-07-05','Reguliari TA',55.00),
+(5,'TA','2024-02-28','2026-02-28','Reguliari TA',60.00),
+(6,'TA','2024-01-12','2026-01-12','Reguliari TA',45.00),
+(7,'TA','2024-08-10','2026-08-10','Reguliari TA',50.00),
+(8,'TA','2024-04-18','2026-04-18','Reguliari TA',60.00),
+(9,'TA','2024-03-01','2026-03-01','Reguliari TA',48.00),
+(10,'TA','2024-05-15','2026-05-15','Reguliari TA',50.00),
+(11,'TA','2024-01-20','2026-01-20','Reguliari TA',40.00),
+(12,'TA','2024-06-01','2026-06-01','Reguliari TA',42.00),
+(13,'TA','2024-02-10','2026-02-10','Reguliari TA',55.00),
+(14,'TA','2024-04-05','2026-04-05','Reguliari TA',50.00),
+(15,'TA','2024-03-15','2026-03-15','Reguliari TA',60.00);
 
--- Nuomos (10–15 logiškų nuomų, vartotojai atitinka klasę)
+-- Nuomos
 INSERT INTO Nuomos (VartotojoID, MasinosID, DarbuotojoID, PaemimoVietaID, PalikimoVietaID, NuomosData, GrazinimoData, VisaSuma) VALUES
 (1,1,1,1,2,'2025-12-01 10:00:00','2025-12-05 10:00:00',120.00),
 (2,2,2,2,2,'2025-12-03 09:00:00','2025-12-04 09:00:00',32.00),
@@ -431,6 +441,8 @@ INSERT INTO Depozitai (NuomosID, Suma, Busena) VALUES
 (9,35.00,'Gautas'),
 (10,20.00,'Gautas');
 
+
+
 -- Papildomos paslaugos
 INSERT INTO PapildomosPaslaugos (Pavadinimas, Aprasymas, Kaina) VALUES
 ('GPS','Navigacijos sistema',5.00),
@@ -439,7 +451,7 @@ INSERT INTO PapildomosPaslaugos (Pavadinimas, Aprasymas, Kaina) VALUES
 ('Wi-Fi','Automobilio Wi-Fi',3.00);
 
 -- NuomosPaslaugos
-INSERT INTO NuomosPaslaugos (NuomosID, PapildomosPaslaugosID) VALUES
+INSERT INTO NuomosPaslaugos (NuomosID, PaslaugosID) VALUES
 (1,1),
 (1,2),
 (2,1),
@@ -452,6 +464,7 @@ INSERT INTO NuomosPaslaugos (NuomosID, PapildomosPaslaugosID) VALUES
 (8,3),
 (9,1),
 (10,4);
+
 
 -- Veiksmų žurnalas (audit)
 INSERT INTO VeiksmuZurnalas (DarbuotojoID, Veiksmas, LentelesPavadinimas, IrasaID, Data) VALUES
